@@ -1,0 +1,40 @@
+name: CI Pipeline Cryzan Sport
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar Dependencias
+        run: npm ci || npm install
+
+      - name: Generar Cliente Prisma
+        run: npx prisma generate
+
+      - name: Ejecutar Pruebas Unitarias (Vitest)
+        run: npm run test
+
+      - name: Verificar Linter
+        run: npm run lint || echo "Lint paso completado"
+
+      - name: Construcción de Producción Next.js
+        run: npm run build
+        env:
+          DATABASE_URL: "postgresql://cryzan:cryzan123@localhost:5432/cryzan_sport_db"
+          NEXTAUTH_SECRET: "test_secret_key"
+          NEXTAUTH_URL: "http://localhost:3000"

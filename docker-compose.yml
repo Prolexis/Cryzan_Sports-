@@ -1,0 +1,70 @@
+name: cryzan-sport
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: cryzan_sport_app
+    user: root
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://cryzan:cryzan123@db:5432/cryzan_sport_db?schema=public
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=cryzan_sport_secret_key_2026_super_secure
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: always
+
+  db:
+    image: postgres:16-alpine
+    container_name: cryzan_sport_db
+    environment:
+      POSTGRES_USER: cryzan
+      POSTGRES_PASSWORD: cryzan123
+      POSTGRES_DB: cryzan_sport_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cryzan -d cryzan_sport_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: cryzan_sport_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+  adminer:
+    image: adminer:latest
+    container_name: cryzan_sport_adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    depends_on:
+      - db
+    restart: always
+
+volumes:
+  postgres_data:
+  redis_data:
