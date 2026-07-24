@@ -13,15 +13,59 @@ enum Role {
   ADMIN
 }
 
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(CLIENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  orders    Order[]
+  id            String          @id @default(uuid())
+  name          String
+  email         String          @unique
+  password      String
+  phone         String?
+  role          Role            @default(CLIENT)
+  resetToken    String?
+  resetTokenExp DateTime?
+  referralCode  String?         @unique
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  orders        Order[]
+  addresses     Address[]
+  reviews       Review[]
+  abandonedCart AbandonedCart?
+  loyaltyPoints LoyaltyPoint?
+  referralsSent Referral[]      @relation("ReferrerRelation")
+  referralsRecv Referral[]      @relation("ReferredRelation")
+  refunds       RefundRequest[]
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  street     String
+  city       String
+  province   String   @default("La Libertad")
+  postalCode String?
+  phone      String
+  isDefault  Boolean  @default(false)
+  orders     Order[]
+  createdAt  DateTime @default(now())
 }
 
 model Category {
@@ -32,39 +76,149 @@ model Category {
 }
 
 model Product {
-  id          String      @id @default(uuid())
+  id          String           @id @default(uuid())
   name        String
-  slug        String      @unique
+  slug        String           @unique
   description String
   price       Float
   image       String
-  stock       Int         @default(50)
+  images      String[]         @default([])
+  stock       Int              @default(50)
   categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id])
+  category    Category         @relation(fields: [categoryId], references: [id])
+  variants    ProductVariant[]
+  reviews     Review[]
   orderItems  OrderItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id         String      @id @default(uuid())
+  productId  String
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size       String      // e.g. "S", "M", "L", "XL", "40", "41", "Unica"
+  color      String?     @default("Estándar")
+  stock      Int         @default(10)
+  orderItems OrderItem[]
 }
 
 model Order {
-  id            String      @id @default(uuid())
-  userId        String?
-  user          User?       @relation(fields: [userId], references: [id])
-  total         Float
-  status        String      @default("COMPLETED")
-  paymentMethod String      @default("Culqi / MercadoPago Sandbox")
-  items         OrderItem[]
-  createdAt     DateTime    @default(now())
+  id             String          @id @default(uuid())
+  userId         String?
+  user           User?           @relation(fields: [userId], references: [id])
+  addressId      String?
+  address        Address?        @relation(fields: [addressId], references: [id])
+  total          Float
+  shippingCost   Float           @default(0.0)
+  discountAmount Float           @default(0.0)
+  couponCode     String?
+  trackingNumber String?
+  carrier        String?         @default("Olva Courier / Shalom")
+  documentType   String          @default("DNI")
+  documentNumber String?         @default("00000000")
+  status         OrderStatus     @default(PENDING)
+  paymentMethod  String          @default("Culqi / MercadoPago Sandbox")
+  items          OrderItem[]
+  refunds        RefundRequest[]
+  createdAt      DateTime        @default(now())
 }
 
 model OrderItem {
-  id        String  @id @default(uuid())
+  id        String          @id @default(uuid())
   orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product         @relation(fields: [productId], references: [id])
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
   quantity  Int
   price     Float
+}
+
+model Coupon {
+  id             String       @id @default(uuid())
+  code           String       @unique
+  discountType   DiscountType @default(PERCENTAGE)
+  value          Float
+  expirationDate DateTime
+  maxUses        Int          @default(100)
+  usedCount      Int          @default(0)
+  createdAt      DateTime     @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      @default(5)
+  comment   String
+  createdAt DateTime @default(now())
+}
+
+model AbandonedCart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemsJson String   // JSON serializado de ítems
+  notified  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+model LoyaltyPoint {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  points    Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model Referral {
+  id          String   @id @default(uuid())
+  referrerId  String
+  referrer    User     @relation("ReferrerRelation", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredId  String
+  referred    User     @relation("ReferredRelation", fields: [referredId], references: [id], onDelete: Cascade)
+  code        String
+  status      String   @default("COMPLETED")
+  createdAt   DateTime @default(now())
+}
+
+model RefundRequest {
+  id        String       @id @default(uuid())
+  orderId   String
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason    String
+  status    RefundStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+}
+
+model GiftCard {
+  id             String   @id @default(uuid())
+  code           String   @unique
+  balance        Float
+  expirationDate DateTime
+  createdAt      DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  adminId   String
+  action    String
+  entity    String
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  isEnabled Boolean  @default(true)
+  updatedAt DateTime @updatedAt
 }
 
 model ContactMessage {

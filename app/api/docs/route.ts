@@ -1,0 +1,34 @@
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  const openApiSpec = {
+    openapi: '3.0.0',
+    info: {
+      title: 'Cryzan Sport REST API',
+      version: '1.0.0',
+      description: 'Documentación oficial de los endpoints de Cryzan Sport Perú (Desarrollo / Staging)',
+    },
+    paths: {
+      '/api/productos': {
+        get: {
+          summary: 'Obtiene el catálogo de productos filtrado',
+          responses: { '200': { description: 'Lista de productos' } },
+        },
+      },
+      '/api/checkout': {
+        post: {
+          summary: 'Procesa una compra de forma atómica',
+          responses: { '200': { description: 'Orden creada exitosamente' } },
+        },
+      },
+      '/api/cupones/validar': {
+        post: {
+          summary: 'Valida un cupón de descuento',
+          responses: { '200': { description: 'Detalle del cupón' } },
+        },
+      },
+    },
+  };
+
+  return NextResponse.json(openApiSpec);
+}

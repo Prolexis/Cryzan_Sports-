@@ -12,9 +12,12 @@ module.exports = {
         brand: {
           red: '#d32f2f',
           redHover: '#b71c1c',
-          dark: '#121212',
-          card: '#1e1e1e',
-          lightBg: '#f8f9fa'
+          dark: 'var(--brand-dark)',
+          card: 'var(--brand-card)',
+          lightBg: 'var(--brand-lightBg)',
+          text: 'var(--brand-text)',
+          muted: 'var(--brand-muted)',
+          border: 'var(--brand-border)'
         }
       }
     },

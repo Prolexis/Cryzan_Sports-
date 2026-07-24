@@ -63,28 +63,28 @@ function ProductosContent() {
   return (
     <div className="space-y-8">
       {/* HEADER CATALOGO */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-brand-card p-6 rounded-2xl border border-gray-800 shadow-lg">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-brand-card p-6 rounded-2xl border border-brand-border shadow-lg">
         <div>
-          <h1 className="text-3xl font-black text-white">Catálogo de Productos</h1>
-          <p className="text-gray-400 text-sm mt-1">Explora nuestro equipamiento y vestimenta oficial Cryzan Sport</p>
+          <h1 className="text-3xl font-black text-brand-text">Catálogo de Productos</h1>
+          <p className="text-brand-muted text-sm mt-1">Explora nuestro equipamiento y vestimenta oficial Cryzan Sport</p>
         </div>
 
         {/* BUSCADOR */}
         <div className="relative w-full md:w-80">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted" />
           <input
             type="text"
             placeholder="Buscar productos..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-red transition"
+            className="w-full pl-10 pr-4 py-2.5 bg-brand-dark border border-brand-border rounded-xl text-brand-text placeholder-brand-muted focus:outline-none focus:border-brand-red transition"
           />
         </div>
       </div>
 
       {/* FILTROS POR CATEGORIA */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
-        <span className="text-xs font-semibold text-gray-400 flex items-center gap-1 uppercase tracking-wider pr-2">
+        <span className="text-xs font-semibold text-brand-muted flex items-center gap-1 uppercase tracking-wider pr-2">
           <Filter className="w-4 h-4" /> Categorías:
         </span>
 
@@ -92,10 +92,10 @@ function ProductosContent() {
           <button
             key={cat}
             onClick={() => handleCategoryChange(cat)}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition ${
+            className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition border ${
               selectedCategory === cat
-                ? 'bg-brand-red text-white shadow-md'
-                : 'bg-gray-900 text-gray-300 border border-gray-800 hover:bg-gray-800'
+                ? 'bg-brand-red border-brand-red text-white shadow-md'
+                : 'bg-brand-card text-brand-text border-brand-border hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
           >
             {cat}
@@ -111,8 +111,8 @@ function ProductosContent() {
           ))}
         </div>
       ) : products.length === 0 ? (
-        <div className="text-center py-16 bg-brand-card rounded-2xl border border-gray-800">
-          <p className="text-gray-400 text-lg">No se encontraron productos en esta categoría.</p>
+        <div className="text-center py-16 bg-brand-card rounded-2xl border border-brand-border">
+          <p className="text-brand-muted text-lg">No se encontraron productos en esta categoría.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -135,7 +135,7 @@ function ProductosContent() {
 
 export default function ProductosPage() {
   return (
-    <Suspense fallback={<div className="text-gray-400 py-10 text-center">Cargando productos...</div>}>
+    <Suspense fallback={<div className="text-brand-muted py-10 text-center">Cargando productos...</div>}>
       <ProductosContent />
     </Suspense>
   );

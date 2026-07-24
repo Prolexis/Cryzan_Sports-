@@ -1,0 +1,33 @@
+name: cryzan-sport-staging
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: cryzan_sport_app_staging
+    ports:
+      - "3001:3000"
+    environment:
+      - DATABASE_URL=postgresql://cryzan:cryzan123@db-staging:5432/cryzan_sport_staging_db?schema=public
+      - NEXTAUTH_URL=http://localhost:3001
+      - NEXTAUTH_SECRET=cryzan_sport_staging_secret
+      - REDIS_URL=redis://redis-staging:6379
+      - NODE_ENV=production
+    depends_on:
+      db-staging:
+        condition: service_healthy
+
+  db-staging:
+    image: postgres:16-alpine
+    container_name: cryzan_sport_db_staging
+    environment:
+      POSTGRES_USER: cryzan
+      POSTGRES_PASSWORD: cryzan123
+      POSTGRES_DB: cryzan_sport_staging_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cryzan -d cryzan_sport_staging_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

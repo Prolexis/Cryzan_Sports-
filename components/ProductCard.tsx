@@ -29,7 +29,7 @@ export function ProductCard({ id, name, price, image, categoryName, stock }: Pro
     <motion.div
       whileHover={{ y: -6 }}
       transition={{ duration: 0.2 }}
-      className="bg-brand-card rounded-xl overflow-hidden border border-gray-800 shadow-xl flex flex-col justify-between"
+      className="bg-brand-card rounded-xl overflow-hidden border border-brand-border shadow-xl flex flex-col justify-between"
     >
       <div className="relative h-56 w-full bg-gray-900 overflow-hidden group">
         <Image
@@ -47,16 +47,16 @@ export function ProductCard({ id, name, price, image, categoryName, stock }: Pro
 
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div>
-          <h3 className="text-white font-bold text-lg line-clamp-1">{name}</h3>
-          <p className="text-gray-400 text-xs mt-1">
-            Stock disponible: <span className="text-emerald-400 font-semibold">{stock ?? 50} unidades</span>
+          <h3 className="text-brand-text font-bold text-lg line-clamp-1">{name}</h3>
+          <p className="text-brand-muted text-xs mt-1">
+            Stock disponible: <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{stock ?? 50} unidades</span>
           </p>
         </div>
 
         <div className="mt-6 flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-xs text-gray-400">Precio</span>
-            <span className="text-2xl font-black text-white">S/. {price.toFixed(2)}</span>
+            <span className="text-xs text-brand-muted">Precio</span>
+            <span className="text-2xl font-black text-brand-text">S/. {price.toFixed(2)}</span>
           </div>
 
           <button

@@ -3,13 +3,19 @@ import { Truck, Award, Headset, ArrowRight } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { ProductCard } from '@/components/ProductCard';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const productosDestacados = await prisma.product.findMany({
-    take: 4,
-    include: { category: true },
-  });
+  let productosDestacados: any[] = [];
+  try {
+    productosDestacados = await prisma.product.findMany({
+      take: 4,
+      include: { category: true },
+    });
+  } catch (error) {
+    console.warn('Servidor DB no accesible durante el build estático de HomePage.');
+  }
 
   return (
     <div className="space-y-16">
