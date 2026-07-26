@@ -7,16 +7,22 @@ import { ShoppingCart, User, LogOut, ShieldAlert } from 'lucide-react';
 import { useCartStore } from '@/lib/store/useCartStore';
 import { ThemeToggle } from './ThemeToggle';
 import { useEffect, useState } from 'react';
+import { CartDrawer } from './CartDrawer';
 
 export function Header() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const totalItems = useCartStore((state) => state.getTotalItems());
+  const { totalItems, setDrawerOpen, fetchCart } = useCartStore((state) => ({
+    totalItems: state.getTotalItems(),
+    setDrawerOpen: state.setDrawerOpen,
+    fetchCart: state.fetchCart,
+  }));
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    fetchCart();
+  }, [fetchCart]);
 
   return (
     <header className="bg-brand-dark text-brand-text border-b border-brand-border sticky top-0 z-50 shadow-md">
@@ -74,9 +80,9 @@ export function Header() {
           <ThemeToggle />
 
           {/* CARRITO BADGE */}
-          <Link
-            href="/carrito"
-            className="relative p-2 text-brand-muted hover:text-brand-text transition"
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="relative p-2 text-brand-muted hover:text-brand-text transition bg-transparent border-0 outline-none cursor-pointer"
             title="Ver Carrito de Compras"
           >
             <ShoppingCart className="w-6 h-6" />
@@ -85,7 +91,7 @@ export function Header() {
                 {totalItems}
               </span>
             )}
-          </Link>
+          </button>
 
           {/* SESIÓN */}
           {session ? (
@@ -112,6 +118,7 @@ export function Header() {
           )}
         </div>
       </div>
+      <CartDrawer />
     </header>
   );
 }

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreditCard, CheckCircle, Lock, ShieldCheck, Tag, Truck } from 'lucide-react';
 import { useCartStore } from '@/lib/store/useCartStore';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getTotalPrice, clearCart } = useCartStore();
+  const { items, totalPrice, shippingCost: dbShippingCost, clearCart, fetchCart } = useCartStore();
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -23,8 +23,12 @@ export default function CheckoutPage() {
   const [documentType, setDocumentType] = useState('DNI');
   const [documentNumber, setDocumentNumber] = useState('47586932');
 
-  const subtotal = getTotalPrice();
-  const shippingCost = shippingRegion === 'trujillo' ? 0 : 15.0;
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
+
+  const subtotal = totalPrice ?? 0;
+  const shippingCost = dbShippingCost ?? 0;
   const total = Math.max(0, subtotal - discount + shippingCost);
 
   const handleApplyCoupon = async () => {
@@ -63,7 +67,6 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items,
           total,
           shippingCost,
           documentType,

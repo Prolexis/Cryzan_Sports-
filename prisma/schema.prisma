@@ -52,6 +52,7 @@ model User {
   referralsSent Referral[]      @relation("ReferrerRelation")
   referralsRecv Referral[]      @relation("ReferredRelation")
   refunds       RefundRequest[]
+  carts         Cart[]
 }
 
 model Address {
@@ -84,6 +85,8 @@ model Product {
   image       String
   images      String[]         @default([])
   stock       Int              @default(50)
+  weightGrams Int              @default(500)
+  volumeCm3   Int              @default(1000)
   categoryId  String
   category    Category         @relation(fields: [categoryId], references: [id])
   variants    ProductVariant[]
@@ -101,6 +104,7 @@ model ProductVariant {
   color      String?     @default("Estándar")
   stock      Int         @default(10)
   orderItems OrderItem[]
+  cartItems  CartItem[]
 }
 
 model Order {
@@ -227,4 +231,36 @@ model ContactMessage {
   email     String
   message   String
   createdAt DateTime @default(now())
+}
+
+enum CartStatus {
+  ACTIVE
+  SAVED_FOR_LATER
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String?
+  status    CartStatus @default(ACTIVE)
+  items     CartItem[]
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model CartItem {
+  id               String         @id @default(uuid())
+  cartId           String
+  cart             Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  quantity         Int
+  priceSnapshot    Float
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([cartId, productVariantId])
 }

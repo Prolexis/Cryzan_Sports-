@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
 import { sendEmail, generateOrderEmailTemplate } from '@/lib/email';
 import { OrderStatus } from '@prisma/client';
+import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
@@ -16,26 +17,61 @@ export async function POST(request: Request) {
     }
 
     const session = await getServerSession(authOptions);
-    const { items, total, shippingCost, documentType, documentNumber, couponCode } = await request.json();
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get('sessionId')?.value;
 
-    if (!items || items.length === 0) {
+    const { total, shippingCost, documentType, documentNumber, couponCode } = await request.json();
+
+    let userId = session?.user?.id || null;
+    if (userId) {
+      const userExists = await prisma.user.findUnique({ where: { id: userId } });
+      if (!userExists) userId = null;
+    }
+
+    // Fetch active cart from DB
+    const activeCart = await prisma.cart.findFirst({
+      where: userId
+        ? { userId, status: 'ACTIVE' }
+        : { sessionId, status: 'ACTIVE' },
+      include: {
+        items: {
+          include: {
+            productVariant: {
+              include: { product: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!activeCart || activeCart.items.length === 0) {
       return NextResponse.json({ error: 'El carrito está vacío' }, { status: 400 });
     }
 
     // 2. Transacción Atómica prisma.$transaction
     const resultOrder = await prisma.$transaction(async (tx) => {
-      // a. Verificar stock disponible para cada producto
-      for (const item of items) {
-        const prod = await tx.product.findUnique({ where: { id: item.id } });
-        if (!prod || prod.stock < item.quantity) {
-          throw new Error(`Stock insuficiente para el producto: ${item.name}`);
+      // a. Verificar stock disponible para cada producto usando SELECT FOR UPDATE
+      for (const item of activeCart.items) {
+        const variants: any[] = await tx.$queryRaw`
+          SELECT * FROM "ProductVariant"
+          WHERE id = ${item.productVariantId}
+          FOR UPDATE
+        `;
+        const variant = variants[0];
+
+        if (!variant) {
+          throw new Error(`Variante no encontrada para el artículo`);
+        }
+
+        if (variant.stock < item.quantity) {
+          throw new Error(`Stock insuficiente para el producto: ${item.productVariant.product.name}`);
         }
       }
 
       // b. Crear la orden
       const order = await tx.order.create({
         data: {
-          userId: session?.user?.id || null,
+          userId: userId,
           total: total,
           shippingCost: shippingCost || 0.0,
           documentType: documentType || 'DNI',
@@ -44,33 +80,46 @@ export async function POST(request: Request) {
           status: OrderStatus.PAID,
           paymentMethod: 'Culqi / MercadoPago Sandbox',
           items: {
-            create: items.map((item: any) => ({
-              productId: item.id,
+            create: activeCart.items.map((item: any) => ({
+              productId: item.productVariant.productId,
+              variantId: item.productVariantId,
               quantity: item.quantity,
-              price: item.price,
+              price: item.priceSnapshot,
             })),
           },
         },
       });
 
-      // c. Descontar stock atómicamente
-      for (const item of items) {
-        await tx.product.update({
-          where: { id: item.id },
+      // c. Descontar stock atómicamente de las variantes
+      for (const item of activeCart.items) {
+        await tx.productVariant.update({
+          where: { id: item.productVariantId },
           data: { stock: { decrement: item.quantity } },
         });
       }
+
+      // d. Limpiar carrito
+      await tx.cartItem.deleteMany({
+        where: { cartId: activeCart.id }
+      });
+      await tx.cart.delete({
+        where: { id: activeCart.id }
+      });
 
       return order;
     });
 
     // 3. Enviar correo transaccional de confirmación
     const userEmail = session?.user?.email || 'cliente@cryzan.com';
-    await sendEmail({
-      to: userEmail,
-      subject: `Confirmación de Compra #${resultOrder.id.slice(0, 8)} - Cryzan Sport`,
-      html: generateOrderEmailTemplate(resultOrder.id, resultOrder.total),
-    });
+    try {
+      await sendEmail({
+        to: userEmail,
+        subject: `Confirmación de Compra #${resultOrder.id.slice(0, 8)} - Cryzan Sport`,
+        html: generateOrderEmailTemplate(resultOrder.id, resultOrder.total),
+      });
+    } catch (e) {
+      console.error('Failed to send transactional email:', e);
+    }
 
     return NextResponse.json({ success: true, orderId: resultOrder.id });
   } catch (error: any) {

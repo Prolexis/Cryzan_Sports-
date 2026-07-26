@@ -2,7 +2,19 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
+  let sessionId = request.cookies.get('sessionId')?.value;
   const response = NextResponse.next();
+
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    response.cookies.set('sessionId', sessionId, {
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+  }
 
   // Headers de Seguridad Nivel Producción
   response.headers.set('X-Frame-Options', 'DENY');
