@@ -24,7 +24,7 @@ vi.mock('next/headers', () => ({
 
 async function isDbConnected(): Promise<boolean> {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.category.findFirst();
     return true;
   } catch (error) {
     return false;
