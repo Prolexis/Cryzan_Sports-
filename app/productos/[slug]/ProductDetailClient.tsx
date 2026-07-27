@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { ShoppingCart, CheckCircle2, ShieldCheck, Truck, Star } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, ShieldCheck, Truck, Star, Heart } from 'lucide-react';
 import { useCartStore } from '@/lib/store/useCartStore';
+import { useWishlistStore } from '@/lib/store/useWishlistStore';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 interface Variant {
   id: string;
@@ -29,6 +32,10 @@ interface ProductDetailProps {
 
 export function ProductDetailClient({ product }: ProductDetailProps) {
   const addItem = useCartStore((state) => state.addItem);
+  const { toggleWishlist, isInWishlist } = useWishlistStore();
+  const { data: session } = useSession();
+  const router = useRouter();
+
   const [selectedImage, setSelectedImage] = useState(product.image);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
     product.variants?.length ? product.variants[0] : null
@@ -49,6 +56,15 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
     setTimeout(() => setAdded(false), 1500);
   };
 
+  const handleToggleFav = () => {
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+    toggleWishlist(product.id, selectedVariant?.id || null);
+  };
+
+  const isFav = isInWishlist(product.id, selectedVariant?.id || null);
   const currentStock = selectedVariant ? selectedVariant.stock : product.stock;
 
   return (
@@ -128,29 +144,43 @@ export function ProductDetailClient({ product }: ProductDetailProps) {
           </div>
         </div>
 
-        {/* BOTÓN AGREGAR AL CARRITO */}
+        {/* ACCIONES DE COMPRA Y FAVORITOS */}
         <div className="space-y-4 pt-6 border-t border-gray-800">
-          <button
-            onClick={handleAddToCart}
-            disabled={currentStock === 0}
-            className={`w-full py-4 rounded-xl font-bold text-base transition shadow-xl flex items-center justify-center gap-2 ${
-              currentStock === 0
-                ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                : added
-                ? 'bg-emerald-600 text-white'
-                : 'bg-brand-red hover:bg-brand-redHover text-white'
-            }`}
-          >
-            {added ? (
-              <>
-                <CheckCircle2 className="w-5 h-5" /> ¡Añadido al Carrito!
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="w-5 h-5" /> Agregar al Carrito
-              </>
-            )}
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleAddToCart}
+              disabled={currentStock === 0}
+              className={`flex-1 py-4 rounded-xl font-bold text-base transition shadow-xl flex items-center justify-center gap-2 ${
+                currentStock === 0
+                  ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                  : added
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-brand-red hover:bg-brand-redHover text-white'
+              }`}
+            >
+              {added ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5" /> ¡Añadido al Carrito!
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-5 h-5" /> Agregar al Carrito
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handleToggleFav}
+              className={`px-5 rounded-xl border transition shadow-md flex items-center justify-center ${
+                isFav
+                  ? 'bg-brand-red/10 border-brand-red text-brand-red hover:bg-brand-red/20'
+                  : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800'
+              }`}
+              title={isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+            >
+              <Heart className={`w-6 h-6 ${isFav ? 'fill-current' : ''}`} />
+            </button>
+          </div>
 
           <div className="grid grid-cols-2 gap-4 text-xs text-gray-400 pt-2">
             <div className="flex items-center gap-2 bg-gray-900 p-3 rounded-xl border border-gray-800">

@@ -1,6 +1,6 @@
 // Administrador de colas asíncronas BullMQ sobre Redis
 export interface QueueJob {
-  type: 'EMAIL' | 'PDF' | 'ABANDONED_CART_NOTIFICATION';
+  type: 'EMAIL' | 'PDF' | 'ABANDONED_CART_NOTIFICATION' | 'WISHLIST_STOCK_ALERT' | 'WISHLIST_PRICE_ALERT';
   payload: any;
 }
 

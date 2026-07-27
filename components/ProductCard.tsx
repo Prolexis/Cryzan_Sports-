@@ -2,8 +2,11 @@
 
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ShoppingCart, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, Heart } from 'lucide-react';
 import { useCartStore } from '@/lib/store/useCartStore';
+import { useWishlistStore } from '@/lib/store/useWishlistStore';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface ProductCardProps {
@@ -17,7 +20,12 @@ interface ProductCardProps {
 
 export function ProductCard({ id, name, price, image, categoryName, stock }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
+  const { toggleWishlist, isInWishlist } = useWishlistStore();
+  const { data: session } = useSession();
+  const router = useRouter();
   const [added, setAdded] = useState(false);
+
+  const isFav = isInWishlist(id);
 
   const handleAdd = () => {
     addItem({ id, name, price, image });
@@ -25,11 +33,21 @@ export function ProductCard({ id, name, price, image, categoryName, stock }: Pro
     setTimeout(() => setAdded(false), 1500);
   };
 
+  const handleToggleFav = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+    toggleWishlist(id);
+  };
+
   return (
     <motion.div
       whileHover={{ y: -6 }}
       transition={{ duration: 0.2 }}
-      className="bg-brand-card rounded-xl overflow-hidden border border-brand-border shadow-xl flex flex-col justify-between"
+      className="bg-brand-card rounded-xl overflow-hidden border border-brand-border shadow-xl flex flex-col justify-between relative"
     >
       <div className="relative h-56 w-full bg-gray-900 overflow-hidden group">
         <Image
@@ -43,6 +61,13 @@ export function ProductCard({ id, name, price, image, categoryName, stock }: Pro
             {categoryName}
           </span>
         )}
+        <button
+          onClick={handleToggleFav}
+          className="absolute top-3 right-3 p-2 rounded-full bg-black/60 backdrop-blur-md border border-gray-800 text-gray-300 hover:text-brand-red transition duration-200 z-10"
+          title={isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+        >
+          <Heart className={`w-4 h-4 ${isFav ? 'text-brand-red fill-current' : ''}`} />
+        </button>
       </div>
 
       <div className="p-5 flex-1 flex flex-col justify-between">
