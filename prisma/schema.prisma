@@ -283,3 +283,29 @@ model Wishlist {
   @@unique([userId, productId, variantId])
   @@index([userId])
 }
+
+model Report {
+  id        String   @id @default(uuid())
+  type      String   // VENTAS_MENSUAL, INVENTARIO_DEVOLUCIONES, RECLAMO_CONSTANCIA, B2B_CONTRATO
+  format    String   // PDF, DOCX
+  status    String   // PENDING, COMPLETED, FAILED
+  fileName  String?  // File name saved in temporary directory
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Claim {
+  id             String   @id @default(uuid())
+  claimNumber    String   @unique // REC-2026-0001
+  fullName       String
+  documentType   String   // DNI, RUC, CE
+  documentNumber String
+  phone          String
+  email          String
+  type           String   // RECLAMO, QUEJA
+  description    String   // Detailed facts
+  request        String   // Pretension / Request of client
+  status         String   @default("PENDING") // PENDING, RESOLVED
+  createdAt      DateTime @default(now())
+}
+
